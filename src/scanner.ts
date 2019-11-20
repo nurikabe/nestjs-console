@@ -1,12 +1,20 @@
 import { isEmpty } from 'lodash';
 import { CONSOLE_METADATA_NAME, COMMAND_METADATA_NAME } from './constants';
-import { IScanResponse, IConsoleOptions, IMethodsMetadata } from './interfaces';
+import { IConsoleOptions, ICommandDecoratorOptions } from './decorators';
+
+export interface IMethodsMetadata {
+    name: string;
+    metadata: ICommandDecoratorOptions;
+}
+
+export interface IScanResponse {
+    instance: any;
+    metadata: IConsoleOptions;
+    methods: IMethodsMetadata[];
+}
 
 export class ConsoleScanner {
-    private getModules(
-        modulesContainer: Map<any, any>,
-        include: Function[]
-    ): any[] {
+    private getModules(modulesContainer: Map<any, any>, include: any[]): any[] {
         const allModules = [...modulesContainer.values()];
         if (!include || isEmpty(include)) {
             return allModules;
@@ -24,7 +32,7 @@ export class ConsoleScanner {
             );
     }
 
-    public scan(app, includedModules?: Function[]): Set<IScanResponse> {
+    public scan(app, includedModules?: any[]): Set<IScanResponse> {
         const set = new Set<IScanResponse>();
         const { container } = app;
         const modules = this.getModules(
@@ -34,7 +42,9 @@ export class ConsoleScanner {
         modules.forEach(m => {
             m._providers.forEach(p => {
                 const { metatype, name } = p;
-                if (typeof metatype !== 'function') return;
+                if (typeof metatype !== 'function') {
+                    return;
+                }
 
                 const consoleMetadata: IConsoleOptions = Reflect.getMetadata(
                     CONSOLE_METADATA_NAME,
@@ -51,14 +61,16 @@ export class ConsoleScanner {
                 const methods = this.getInstanceMethods(instance);
 
                 // get the metadata of the methods
-                const methodsMetadata = methods.map<IMethodsMetadata>(m => ({
-                    name: m,
-                    metadata: Reflect.getMetadata(
-                        COMMAND_METADATA_NAME,
-                        instance,
-                        m
-                    )
-                }));
+                const methodsMetadata = methods.map<IMethodsMetadata>(
+                    methodMetadata => ({
+                        name: methodMetadata,
+                        metadata: Reflect.getMetadata(
+                            COMMAND_METADATA_NAME,
+                            instance,
+                            methodMetadata
+                        )
+                    })
+                );
 
                 set.add({
                     instance,

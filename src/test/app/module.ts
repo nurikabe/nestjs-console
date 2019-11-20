@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConsoleModule } from '../module';
+import { ConsoleModule } from '../../module';
 
 @Module({
     imports: [ConsoleModule],

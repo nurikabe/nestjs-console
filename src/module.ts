@@ -1,12 +1,12 @@
 import { Module, INestApplicationContext } from '@nestjs/common';
-import { commander } from './commander';
 import { COMMANDER_SERVICE_TOKEN } from './constants';
 import { ConsoleScanner } from './scanner';
 import { ConsoleService } from './service';
+import commander = require('commander');
 
 const cliProvider = {
     provide: COMMANDER_SERVICE_TOKEN,
-    useValue: new commander.Command()
+    useValue: commander
 };
 
 @Module({
@@ -18,30 +18,20 @@ export class ConsoleModule {
 
     constructor(protected readonly service: ConsoleService) {}
 
-    public scan(app: INestApplicationContext, includedModules?: Function[]) {
+    public scan(app: INestApplicationContext, includedModules?: any[]) {
         const scanResponse = this.scanner.scan(app, includedModules);
-        let cli = this.service.getCli();
+        const cli = this.service.getCli();
         scanResponse.forEach(({ methods, instance, metadata }) => {
-            // if  we have a name declared on the @Console decorators
-            // we register all methods under a sub command
             if (metadata.name) {
-                instance._cli = this.service.subCommands(
-                    cli,
-                    metadata.name,
-                    metadata.description
-                );
+                instance._cli = this.service.createSubCommand(cli, metadata);
             } else {
                 instance._cli = cli;
             }
-
             for (const method of methods) {
                 const command = instance._cli
-                    .command(
-                        method.metadata.command,
-                        null,
-                        method.metadata.commandOptions
-                    )
-                    .description(method.metadata.description);
+                    .command(method.metadata.command)
+                    .description(method.metadata.description)
+                    .alias(method.metadata.alias);
                 if (Symbol.iterator in Object(method.metadata.options)) {
                     for (const opt of method.metadata.options) {
                         command.option(

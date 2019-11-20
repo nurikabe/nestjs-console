@@ -43,13 +43,11 @@ You can also extend the `BootstrapConsole` class to suit your needs.
 import { BootstrapConsole } from 'nestjs-console';
 import { MyModule } from './module';
 
-BootstrapConsole.init({ module: MyModule })
-    .then(({ app, boot }) => {
-        // do something with your app container if you need (app)
-        // boot the cli
-        boot(/*process.argv*/);
-    })
-    .catch(e => console.log('Error', e));
+BootstrapConsole.init({ module: MyModule }).then(({ app, boot }) => {
+    // do something with your app container if you need (app)
+    // boot the cli
+    boot(/*process.argv*/);
+});
 ```
 
 ## Import the ConsoleModule in your main module
@@ -127,7 +125,7 @@ Nestjs providers that are decorated with @Console will be scanned and each membe
 
 ```ts
 // service.ts - a nestjs provider using console decorators
-import { Console, Command } from 'nestjs-console';
+import { Console, Command, createSpinner } from 'nestjs-console';
 
 @Console()
 export class MyService {
@@ -137,14 +135,12 @@ export class MyService {
     })
     async listContent(directory: string): void | Promise<void> {
         // See Ora npm package for details about spinner
-        const spin = this.consoleService.constructor.createSpinner();
+        const spin = createSpinner();
         spin.start(`Listing files in directory ${directory}`);
 
         // simulate a long task of 1 seconds
         const files = await new Promise(done =>
-            setTimeout(() => {
-                done(['fileA', 'fileB']);
-            }, 1000)
+            setTimeout(() => done(['fileA', 'fileB']), 1000)
         );
 
         spin.succeed('Listing done');
